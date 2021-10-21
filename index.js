@@ -2,7 +2,7 @@ import { createServer } from 'http';
 import Express from 'express'
 import { Server } from "socket.io";
 import BodyParser from 'body-parser';
-import Cors from 'cors';
+import cors from 'cors';
 import CoinGecko from 'coingecko-api';
 
 import Config from './config';
@@ -26,8 +26,16 @@ app.use(BodyParser.json());
 
 // Add CORS headers to allow everything; this is obviously unsafe in the real world but
 // for this example it's fine.
-app.use(Cors());
-app.options('*', Cors());
+const allowedOrigins = [
+  'https://chainalysis-frontend.herokuapp.com',
+  'http://localhost:3000',
+]
+const corsOption = {
+  origin: allowedOrigins,
+  optionsSuccessStatus: 200,
+  credentials: true,
+}
+app.use(cors(corsOption));
 
 
 const server = createServer(app);
