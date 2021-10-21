@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
-    "start": "nodemon --experimental-modules --es-module-specifier-resolution=node index.js"
+    "start": "node --experimental-modules --es-module-specifier-resolution=node index.js"
   },
   "author": "Priyam Suthar",
   "license": "ISC",
