@@ -1,6 +1,6 @@
 import { createServer } from 'http';
-import Express from 'express'
-import { Server } from "socket.io";
+import Express from 'express';
+import { Server } from 'socket.io';
 import BodyParser from 'body-parser';
 import cors from 'cors';
 import CoinGecko from 'coingecko-api';
@@ -29,24 +29,22 @@ app.use(BodyParser.json());
 const allowedOrigins = [
   'https://chainalysis-frontend.herokuapp.com',
   'http://localhost:3000',
-]
+];
 const corsOption = {
   origin: allowedOrigins,
   optionsSuccessStatus: 200,
   credentials: true,
-}
+};
 app.use(cors(corsOption));
-
 
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
     origin: '*',
-  }
+  },
 });
 
-const getSellPrice = (buyPrice, bidAskSpreadPercentage) =>
-  Number((buyPrice - (buyPrice * bidAskSpreadPercentage) / 100)).toFixed(3);
+const getSellPrice = (buyPrice, bidAskSpreadPercentage) => Number((buyPrice - (buyPrice * bidAskSpreadPercentage) / 100)).toFixed(3);
 
 const getCoinInfo = async (coinId) => {
   let response;
@@ -65,15 +63,14 @@ const getCoinInfo = async (coinId) => {
         identifier: entry.market.identifier,
         buy: Number(entry.last).toFixed(2),
         sell: getSellPrice(entry.last, entry.bid_ask_spread_percentage),
-      }))
-    ;
+      }));
   } catch (err) {
     console.log(err);
-    response = [] ;
+    response = [];
   }
 
   return response;
-}
+};
 
 const getApiAndEmit = async (socket) => {
   console.log('Hello world');
@@ -84,7 +81,7 @@ const getApiAndEmit = async (socket) => {
   const response = { bitcoin, ethereum };
 
   // Emitting a new message. Will be consumed by the client
-  socket.emit("FromAPI", response);
+  socket.emit('FromAPI', response);
 };
 
 io.on('connection', (socket) => {
@@ -93,7 +90,7 @@ io.on('connection', (socket) => {
   const intervalId = setInterval(() => getApiAndEmit(socket), 5000);
 
   // handle the event sent with socket.send()
-  socket.on("message", (data) => {
+  socket.on('message', (data) => {
     console.log(data);
   });
 
