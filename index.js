@@ -3,29 +3,18 @@ import Express from 'express';
 import { Server } from 'socket.io';
 import BodyParser from 'body-parser';
 import cors from 'cors';
-import CoinGecko from 'coingecko-api';
+import controller from './controller';
 
 import Config from './config';
-//
+
 // Build a basic express app
 const app = Express();
-// const serverInstance = createServer(app);
 const { port } = Config.server;
 
-// Initiate the CoinGecko API Client
-const CoinGeckoClient = new CoinGecko();
-
-// I will be using the following 2 different exchanges for the application
-// gdax - Coinbase Exchange
-// bitfinex - Bitfinex
-const EXCHANGES_ID = ['gdax', 'bitfinex'];
-//
-//
 // Parse JSON bodies of requests
 app.use(BodyParser.json());
 
-// Add CORS headers to allow everything; this is obviously unsafe in the real world but
-// for this example it's fine.
+// Add CORS headers to allow trusted domains
 const allowedOrigins = [
   'https://chainalysis-frontend.herokuapp.com',
   'http://localhost:3000',
@@ -37,6 +26,7 @@ const corsOption = {
 };
 app.use(cors(corsOption));
 
+// Create a server and attach the socket
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
@@ -44,50 +34,10 @@ const io = new Server(server, {
   },
 });
 
-const getSellPrice = (buyPrice, bidAskSpreadPercentage) => Number((buyPrice - (buyPrice * bidAskSpreadPercentage) / 100)).toFixed(3);
-
-const getCoinInfo = async (coinId) => {
-  let response;
-  try {
-    const result = await CoinGeckoClient.coins.fetch(coinId);
-    const { data, success } = result;
-
-    if (!success) {
-      throw new Error(JSON.stringify(result));
-    }
-
-    response = data.tickers
-      .filter((entry) => EXCHANGES_ID.includes(entry.market.identifier) && (entry.target === 'USD'))
-      .map((entry) => ({
-        name: entry.market.name,
-        identifier: entry.market.identifier,
-        buy: Number(entry.last).toFixed(2),
-        sell: getSellPrice(entry.last, entry.bid_ask_spread_percentage),
-      }));
-  } catch (err) {
-    console.log(err);
-    response = [];
-  }
-
-  return response;
-};
-
-const getApiAndEmit = async (socket) => {
-  console.log('Hello world');
-
-  const bitcoin = await getCoinInfo('bitcoin');
-  const ethereum = await getCoinInfo('ethereum');
-
-  const response = { bitcoin, ethereum };
-
-  // Emitting a new message. Will be consumed by the client
-  socket.emit('FromAPI', response);
-};
-
+// Start sending data on connections
 io.on('connection', (socket) => {
   console.log('Connection established');
-
-  const intervalId = setInterval(() => getApiAndEmit(socket), 5000);
+  const intervalId = setInterval(() => controller.getApiAndEmit(socket), 5000);
 
   // handle the event sent with socket.send()
   socket.on('message', (data) => {
@@ -97,6 +47,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('Disconnected');
 
+    // Clearing the interval if disconnects
     clearInterval(intervalId);
     console.log('Interval Cleared!');
   });
